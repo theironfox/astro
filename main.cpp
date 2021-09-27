@@ -12,8 +12,8 @@
 		*************************/
 int iflag = SEFLG_SWIEPH | SEFLG_SPEED | SEFLG_EQUATORIAL;
 double Julian_Date;
-int hour, minute, day, month, year;
-double second;
+int day, month, year;
+double minute, hour, second;
 
 /**********************************************************/
 std::string tmp_string;
