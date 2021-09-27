@@ -38,9 +38,9 @@ simple::simple(const wxString& title)
 	: wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(1210,860))
 {
 	wxMenu *mainMenu = new wxMenu;
-	mainMenu->Append(wxID_ANY, "New", "item1");
-	mainMenu->Append(ID_OPEN, "Open", "item2");
-	mainMenu->Append(ID_SAVE,"Save", "item3");
+	mainMenu->Append(wxID_ANY, "&New", "item1");
+	mainMenu->Append(ID_OPEN, "&Open", "item2");
+	mainMenu->Append(ID_SAVE,"&Save", "item3");
 	mainMenu->AppendSeparator();
 	mainMenu->Append(wxID_ANY, "Export PDF", "item4");
 	mainMenu->AppendSeparator();
