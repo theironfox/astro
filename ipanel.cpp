@@ -9,7 +9,8 @@ extern simple* Simple;
 extern std::string tmp_string;
 
 //SWEPH
-extern int minute, hour, day, month, year;
+extern int day, month, year;
+extern double minute, hour, second;
 extern double Julian_Date;
 //
 
@@ -86,21 +87,57 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 	std::cout << std::fixed;
 	std::cout << std::setprecision(6);
 
-	std::string tempString = std::string(nameTctl->GetValue().mb_str());
+	std::string tString = std::string(nameTctl->GetValue().mb_str());
 	std::string tD = std::string(dateATctl->GetValue().mb_str());
 	std::string tTM = std::string(timeTctl->GetValue().mb_str());
 	/*****************************************
 	*	Time input and handling		 *
 	*****************************************/
 	std::cout << tTM << std::endl;
-	if(tTM.length() != 5)
+/*	if(tTM.length() != 5)
 	{
 		std::cout << "Incorrect time format" << std::endl;
 	}
 	if(tTM.length() == 5)
 	{
+		double local_minute;
 		hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
 		minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
+
+		local_minute = hour + (minute / 60);  //TODO Get rid of 'variable in the middle'
+		hour = hour + (minute / 60);
+		std::cout << hour << std::endl;
+	}
+*/
+	switch(tTM.length()) //This works well but is clumsy, clean up when possible
+	{
+		case 0:
+			std::cout << "Time not entered" << std::endl;
+		break;
+		case 1:
+			hour = (tTM.at(0) - 48);
+		break;
+		case 2:
+			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
+		break;
+		case 4:
+			hour = (tTM.at(0) - 48);
+			minute = ((tTM.at(2) - 48) * 10) + (tTM.at(3) - 48);
+		break;
+		case 5:
+			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
+			minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
+		break;
+		case 7:
+			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
+			minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
+			second = (tTM.at(6) - 48);
+		break;
+		case 8:
+		break;
+		default:
+			std::cout << "Unrecognised time input" << std::endl;
+		break;
 	}
 	if(!radio1->GetValue())
 	{
@@ -125,16 +162,27 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 		month = ((tD.at(3) - 48) * 10) + (tD.at(4) - 48);
 		year = ((tD.at(6) - 48) * 1000) + ((tD.at(7) - 48) * 100) + ((tD.at(8) - 48) * 10) + (tD.at(9) - 48);
 	}
+	if(tD.length() == 9)
+	{
+		day = ((tD.at(0) - 48) * 10) + (tD.at(1) - 48);
+		month = (tD.at(3) - 48);
+		year = ((tD.at(5) - 48) * 1000) + ((tD.at(6) - 48) * 100) + ((tD.at(7) - 48) * 10) + (tD.at(8) - 48);
+	}
 //	std::cout << tempString.length() << std::endl;
-	tempString = tempString + "\nDate: ";
-	tempString = tempString + std::to_string(day) + "/" + std::to_string(month) + "/" + std::to_string(year);
+	tString = tString + "\nDate: ";
+	tString = tString + std::to_string(day) + "/" + std::to_string(month) + "/" + std::to_string(year);
 	Julian_Date = swe_julday(year, month, day, hour, SE_GREG_CAL);
-	
-	tempString = tempString + "\nTime: " + std::to_string(hour) + ":" + std::to_string(minute) + " " + strAMPM;
+        if((int)minute == 0 && (int)second == 0)
+	{
+		tString = tString + "\nTime: " + std::to_string((int)hour) + " " + strAMPM;
+	}
+	else
+	{
+		tString = tString + "\nTime: " + std::to_string((int)hour) + ":" + std::to_string((int)minute) + " " + strAMPM;
+	}
+	tString = tString + "\nJulian Date: " + std::to_string(Julian_Date);
 
-	tempString = tempString + "\nJulian Date: " + std::to_string(Julian_Date);
-
-	Simple->UpdateNP(tempString);
+	Simple->UpdateNP(tString);
 
 }
 
