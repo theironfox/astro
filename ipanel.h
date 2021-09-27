@@ -4,8 +4,6 @@
 #include <wx/notebook.h>
 #include <stdio.h>
 
-int test;
-
 class inputPanel : public wxPanel
 {
 public:
