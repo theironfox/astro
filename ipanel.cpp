@@ -1,10 +1,12 @@
 #include "ipanel.h"
-//#include <wx/datectrl.h>
+#include <wx/msgdlg.h>
+#include "strdef.h"
 #include <stdio.h>
 #include <iomanip>
 #include "main.h"
 #include <string.h>
 #include "swephexp.h"
+
 extern simple* Simple;
 extern std::string tmp_string;
 
@@ -13,12 +15,6 @@ extern int day, month, year;
 extern double minute, hour, second;
 extern double Julian_Date;
 //
-
-std::string timeZones[38] = {
-			    "-12:00","-11:00", "-10:00", "-9:30", "-9:00", "-8:00", "-7:00", "-6:00", "-5:00",
-			    "-4:00", "-3:30", "-3:00", "-2:00", "-1:00", "0:00", "1:00", "2:00", "3:00", "3:30",
-			    "4:00", "4:30", "5:00", "5:30", "5:45", "6:00", "6:30", "7:00", "8:00", "8:45", "9:00",
-			    "9:30", "10:00", "10:30", "11:00", "12:00", "12:45", "13:00", "14:00"};
 
 //spacing information: text and control = 25
 //		       text and combobox = 30
@@ -77,6 +73,7 @@ void inputPanel::Populate(void)
 	{
 		tzoneCombo->Append(timeZones[index]);
 	}
+	radio1->SetValue(true); //Windows requirement.
 }
 
 void inputPanel::OnCalculate(wxCommandEvent& event)
@@ -93,26 +90,18 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 	/*****************************************
 	*	Time input and handling		 *
 	*****************************************/
-	std::cout << tTM << std::endl;
-/*	if(tTM.length() != 5)
-	{
-		std::cout << "Incorrect time format" << std::endl;
-	}
-	if(tTM.length() == 5)
-	{
-		double local_minute;
-		hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
-		minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
+	std::string tempint = timeZones[tzoneCombo->GetSelection()];
+	std::stringstream tSstream;
+	tSstream << tempint;
+	int number;
+	tSstream >> number;
+	std::cout << number + 1;
 
-		local_minute = hour + (minute / 60);  //TODO Get rid of 'variable in the middle'
-		hour = hour + (minute / 60);
-		std::cout << hour << std::endl;
-	}
-*/
+
 	switch(tTM.length()) //This works well but is clumsy, clean up when possible
 	{
 		case 0:
-			std::cout << "Time not entered" << std::endl;
+			wxMessageBox(wxT("Missing information: Time"), wxT("Time input error"), wxICON_ERROR);
 		break;
 		case 1:
 			hour = (tTM.at(0) - 48);
@@ -123,19 +112,32 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 		case 4:
 			hour = (tTM.at(0) - 48);
 			minute = ((tTM.at(2) - 48) * 10) + (tTM.at(3) - 48);
+			hour = hour + (minute / 60);
 		break;
 		case 5:
 			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
 			minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
+			hour = hour + (minute / 60);
 		break;
 		case 7:
 			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
 			minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
 			second = (tTM.at(6) - 48);
+			hour = hour + (minute /60) + (second / 3600);
 		break;
 		case 8:
+			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
+			minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
+			second = ((tTM.at(6) - 48) * 10) + (tTM.at(7) - 48);
+			hour = hour + (minute /60) + (second / 3600);
 		break;
+		case 9:
+			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
+			minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
+			second = ((tTM.at(6) - 48) * 100) + ((tTM.at(7) - 48) * 10) + (tTM.at(8) - 48);
+			hour = hour + (minute /60) + (second / 3600);
 		default:
+			wxMessageBox(wxT("Check time is entered correctly"), wxT("Time input error"), wxICON_ERROR);
 			std::cout << "Unrecognised time input" << std::endl;
 		break;
 	}
@@ -148,6 +150,7 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 	{
 		dls = true;
 		strAMPM = strAMPM + " (Day light savings time)";
+		hour = hour + 1;
 	}
 	/*****************************************
 	*	Date input and handling		 *
@@ -168,18 +171,31 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 		month = (tD.at(3) - 48);
 		year = ((tD.at(5) - 48) * 1000) + ((tD.at(6) - 48) * 100) + ((tD.at(7) - 48) * 10) + (tD.at(8) - 48);
 	}
+
 //	std::cout << tempString.length() << std::endl;
 	tString = tString + "\nDate: ";
 	tString = tString + std::to_string(day) + "/" + std::to_string(month) + "/" + std::to_string(year);
-	Julian_Date = swe_julday(year, month, day, hour, SE_GREG_CAL);
-        if((int)minute == 0 && (int)second == 0)
+
+
+
+
+	if((int)minute == 0 && (int)second == 0)
 	{
 		tString = tString + "\nTime: " + std::to_string((int)hour) + " " + strAMPM;
 	}
 	else
 	{
-		tString = tString + "\nTime: " + std::to_string((int)hour) + ":" + std::to_string((int)minute) + " " + strAMPM;
+		tString = tString + "\nTime: " + std::to_string((int)hour) + ":" + std::to_string((int)minute);
+		tString = tString + ":" + std::to_string(second) +  strAMPM;
 	}
+	
+	if(!am)
+	{
+		hour = hour + 12;
+	}
+	hour = hour - tZoneD[tzoneCombo->GetSelection()];
+	Julian_Date = swe_julday(year, month, day, hour, SE_GREG_CAL);
+		
 	tString = tString + "\nJulian Date: " + std::to_string(Julian_Date);
 
 	Simple->UpdateNP(tString);
