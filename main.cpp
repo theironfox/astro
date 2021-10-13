@@ -25,6 +25,8 @@ int ID_OPEN = 2001;
 int ID_SAVE = 2002;
 simple* Simple;
 
+//move the following in to a differnt place
+customDlg* customGeo;
 
 class mainApp : public wxApp
 {
@@ -35,7 +37,7 @@ public:
 
 
 simple::simple(const wxString& title)
-	: wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(1210,860))
+	: wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(1210,890))
 {
 	wxMenu *mainMenu = new wxMenu;
 	mainMenu->Append(wxID_ANY, "New", "item1");
@@ -43,11 +45,12 @@ simple::simple(const wxString& title)
 	mainMenu->Append(ID_SAVE,"Save", "item3");
 	mainMenu->AppendSeparator();
 	mainMenu->Append(wxID_ANY, "Export PDF", "item4");
+	mainMenu->Append(5092, "Print Document", "item5");
 	mainMenu->AppendSeparator();
-	mainMenu->Append(wxID_EXIT,"Quit", "item4");
+	mainMenu->Append(wxID_EXIT,"Quit", "item6");
 
 	wxMenu *locMenu = new wxMenu;
-	locMenu->Append(wxID_ANY, "Custom Data", "item1");
+	locMenu->Append(5091, "Custom Data", "item1");
 
 	wxMenuBar *mainMBar = new wxMenuBar;
 	mainMBar->Append(mainMenu, "&File");
@@ -57,6 +60,8 @@ simple::simple(const wxString& title)
 	Connect(wxID_EXIT, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(simple::OnQuit));
 	Connect(ID_OPEN, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(simple::OnOpen));
 	Connect(ID_SAVE, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(simple::OnSave));
+	Connect(5091, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(simple::OnCData));
+	Connect(5092, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(simple::OnPrint));
 
 	wxPanel *panel = new wxPanel(this, wxID_ANY);
 	ipanel = new inputPanel(panel);
@@ -73,9 +78,20 @@ simple::simple(const wxString& title)
 	Centre();
 }
 
+void simple::OnCData(wxCommandEvent& WXUNUSED(event))
+{
+	customGeo = new customDlg(wxT("Custom location setup"));
+	customGeo->Show(true);
+}
 void simple::UpdateNP(std::string str)
 {
 	textCtrl1->ChangeValue("Name: " + str);
+}
+
+void simple::OnPrint(wxCommandEvent& WXUNUSED(event))
+{
+	wxMessageBox(wxT("Printing temporarily disable until Richtext is added"), wxT("Printing Disabled"), wxICON_INFORMATION);
+	std::cout << "print message" << std::endl;
 }
 
 void simple::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -95,7 +111,7 @@ void simple::OnSave(wxCommandEvent& WXUNUSED(event))
 
 void simple::OnOpen(wxCommandEvent& WXUNUSED(event))
 {
-	    wxFileDialog 
+    wxFileDialog 
         openFileDialog(this, _("Open DSB file"), "", "",
                        "DSB files (*.dsb)|*.dsb", wxFD_OPEN|wxFD_FILE_MUST_EXIST);
     if (openFileDialog.ShowModal() == wxID_CANCEL)
@@ -130,6 +146,7 @@ bool mainApp::OnInit()
 	 Simple = new simple(wxT("Simple"));
 
 
+//	customGeo = new customDlg(wxT("Custom location setup"));
 //	splash *Splash = new splash(wxT("Splash screen"));
 //	Splash->Show(true);
 	Simple->Show(true);

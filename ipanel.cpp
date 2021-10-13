@@ -6,6 +6,7 @@
 #include "main.h"
 #include <string.h>
 #include "swephexp.h"
+#include <fstream>
 
 extern simple* Simple;
 extern std::string tmp_string;
@@ -50,20 +51,63 @@ inputPanel::inputPanel(wxPanel *parent)
 	dlsCheck = new wxCheckBox(this, wxID_ANY, wxT("Daylight saving time"), wxPoint(5,250), wxDefaultSize);
 
 //Location data
-	wxStaticText *CountryLabel = new wxStaticText(this, wxID_ANY, wxT("Country:"), wxPoint(5,295), wxDefaultSize);
-	wxComboBox *CntryCombo = new wxComboBox(this, wxID_ANY, wxEmptyString, wxPoint(5,320), wxSize(150,30));
-	wxStaticText *CityLabel = new wxStaticText(this, wxID_ANY, wxT("City:"), wxPoint(5,350), wxDefaultSize);
-	wxComboBox *CityCombo = new wxComboBox(this, wxID_ANY, wxEmptyString, wxPoint(5,375), wxSize(150,30));
-	wxStaticText *CustomLabel = new wxStaticText(this, wxID_ANY, wxT("Custom:"), wxPoint(5,405), wxDefaultSize);
+	CountryLabel = new wxStaticText(this, wxID_ANY, wxT("Country:"), wxPoint(5,295), wxDefaultSize);
+	CntryCombo = new wxComboBox(this, wxID_ANY, wxEmptyString, wxPoint(5,320), wxSize(150,30));
+	CntryCombo->Bind(wxEVT_COMBOBOX, &inputPanel::CntySelect, this);
+	
+	CityLabel = new wxStaticText(this, wxID_ANY, wxT("City:"), wxPoint(5,350), wxDefaultSize);
+	CityCombo = new wxComboBox(this, wxID_ANY, wxEmptyString, wxPoint(5,375), wxSize(150,30));
+	
+	CustomLabel = new wxStaticText(this, wxID_ANY, wxT("Custom Data:"), wxPoint(5,405), wxDefaultSize);
 	CustomLabel->SetForegroundColour(wxColor(*wxLIGHT_GREY));
-	wxComboBox *CustomCombo = new wxComboBox(this, wxID_ANY, wxEmptyString, wxPoint(5,430), wxSize(150,30));
-	wxCheckBox *enableCheck = new wxCheckBox(this, wxID_ANY, wxT("Enable"), wxPoint(170, 430), wxDefaultSize);
+	CustomCombo = new wxComboBox(this, wxID_ANY, wxEmptyString, wxPoint(5,430), wxSize(150,30));
+	CustomCombo->Disable();
+	
+	enableCheck = new wxCheckBox(this, wxID_ANY, wxT("Custom Data"), wxPoint(170, 430), wxDefaultSize);
+	enableCheck->Bind(wxEVT_CHECKBOX, &inputPanel::OnCustom, this);
+	
+	wxPanel *cdPanel = new wxPanel(this, wxID_ANY, wxPoint(0,480), wxSize(250,100));
+	wxStaticText *lngLabel = new wxStaticText(cdPanel, wxID_ANY, wxT("Longitude:"), wxPoint(5, 1), wxDefaultSize); //470
+	lngDeg = new wxTextCtrl(cdPanel, wxID_ANY, wxT(""), wxPoint(5,25), wxSize(40,30));
+	lngMin = new wxTextCtrl(cdPanel, wxID_ANY, wxT(""), wxPoint(50,25), wxSize(40,30));
+	lngSec = new wxTextCtrl(cdPanel, wxID_ANY, wxT(""), wxPoint(95, 25), wxSize(40,30));
+	wxRadioButton *radioLE = new wxRadioButton(cdPanel, wxID_ANY, wxT("E"), wxPoint(150, 25), wxDefaultSize);
+	wxRadioButton *radioLW = new wxRadioButton(cdPanel, wxID_ANY, wxT("W"), wxPoint(190, 25), wxDefaultSize);
 
+	wxPanel *latPanel = new wxPanel(this, wxID_ANY, wxPoint(0,540), wxSize(250,100));
+	wxStaticText *latLabel = new wxStaticText(latPanel, wxID_ANY, wxT("Latitude:"), wxPoint(5, 1), wxDefaultSize);
+	latDeg = new wxTextCtrl(latPanel, wxID_ANY, wxT(""), wxPoint(5,25), wxSize(40,30));
+	latMin = new wxTextCtrl(latPanel, wxID_ANY, wxT(""), wxPoint(50,25), wxSize(40,30));
+	latSec = new wxTextCtrl(latPanel, wxID_ANY, wxT(""), wxPoint(95, 25), wxSize(40,30));
+	wxRadioButton *radioLN = new wxRadioButton(latPanel, wxID_ANY, wxT("N"), wxPoint(150,25), wxDefaultSize);
+	wxRadioButton *radioLS = new wxRadioButton(latPanel, wxID_ANY, wxT("S"), wxPoint(190,25), wxDefaultSize);
 //Buttons
 	wxButton *calcBttn = new wxButton(this, cBttnId, wxT("OK"), wxPoint(5, 750), wxDefaultSize);
 //Save data
 	Populate();
 	
+}
+
+void inputPanel::OnCustom(wxCommandEvent& event)
+{
+	if(enableCheck->GetValue())
+	{
+		CountryLabel->SetForegroundColour(wxColor(*wxLIGHT_GREY));
+		CityLabel->SetForegroundColour(wxColor(*wxLIGHT_GREY));
+		CustomLabel->SetForegroundColour(wxColor(*wxBLACK));
+		CntryCombo->Disable();
+		CityCombo->Disable();
+		CustomCombo->Enable();
+	}
+	else
+	{
+		CountryLabel->SetForegroundColour(wxColor(*wxBLACK));
+		CityLabel->SetForegroundColour(wxColor(*wxBLACK));
+		CustomLabel->SetForegroundColour(wxColor(*wxLIGHT_GREY));
+		CntryCombo->Enable();
+		CityCombo->Enable();
+		CustomCombo->Disable();
+	}
 }
 
 void inputPanel::Populate(void)
@@ -74,6 +118,15 @@ void inputPanel::Populate(void)
 		tzoneCombo->Append(timeZones[index]);
 	}
 	radio1->SetValue(true); //Windows requirement.
+	
+	std::ifstream countryFile("./Data/Countries");
+	std::string line;
+	
+	for(int index = 0; index < 31; index++)
+	{
+		std::getline(countryFile, line);
+		CntryCombo->Append(line);
+	}
 }
 
 void inputPanel::OnCalculate(wxCommandEvent& event)
@@ -95,13 +148,29 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 	tSstream << tempint;
 	int number;
 	tSstream >> number;
-	std::cout << number + 1;
+//	std::cout << number + 1;
 
+	//create decimal from longitude
+	{
+		double deg = std::stod(std::string(lngDeg->GetValue().mb_str()));
+		int mins = std::stoi(std::string(lngMin->GetValue().mb_str()));
+		double secs = std::stod(std::string(lngSec->GetValue().mb_str()));
+		double decDeg = deg + (mins/60) + (secs/3600);
+		std::cout << decDeg << std::endl; 
+	}
+	//create decimal from latitude
+	{
+		double deg = std::stod(std::string(latDeg->GetValue().mb_str()));
+		int mins = std::stoi(std::string(latMin->GetValue().mb_str()));
+		double secs = std::stod(std::string(latSec->GetValue().mb_str()));
+		double decDeg = deg + (mins/60) + (secs/3600);
+		std::cout << decDeg << std::endl; 
+	}
 
 	switch(tTM.length()) //This works well but is clumsy, clean up when possible
 	{
 		case 0:
-			wxMessageBox(wxT("Missing information: Time"), wxT("Time input error"), wxICON_ERROR);
+		//	wxMessageBox(wxT("Missing information: Time"), wxT("Time input error"), wxICON_ERROR);     /////////DEL COMMENT
 		break;
 		case 1:
 			hour = (tTM.at(0) - 48);
@@ -157,7 +226,7 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 	*****************************************/
 	if((tD.length() > 10) || (tD.length() < 8))	//TODO MUST ACCOMODATE OR || 
 	{
-		std::cout << "Incorrect date format" << std::endl;
+		//std::cout << "Incorrect date format" << std::endl;                                   ////////DEL COMMENT
 	}
 	if(tD.length() == 10)
 	{
@@ -205,3 +274,24 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 void inputPanel::DateCheck(wxCommandEvent& event)
 {
 }
+
+void inputPanel::CntySelect(wxCommandEvent& event)
+{
+	CityCombo->Clear();
+	std::stringstream tmpStream;
+	std::string line;
+	tmpStream << CntryCombo->GetSelection();
+	std::string filePath = "./Data/" + tmpStream.str() + "/index";
+	std::cout << filePath << std::endl;
+	std::ifstream cityFile(filePath);
+	int counter = 0;
+	while(std::getline(cityFile, line))
+	{
+		CityCombo->Append(line);
+		counter++;
+	}
+
+}
+
+
+

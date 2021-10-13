@@ -22,6 +22,8 @@ public:
 	void OnQuit(wxCommandEvent& event);
 	void OnOpen(wxCommandEvent& event);
 	void OnSave(wxCommandEvent& event);
+	void OnCData(wxCommandEvent& event);
+	void OnPrint(wxCommandEvent& event);
 	void UpdateNP(std::string str);
 };
 
