@@ -11,9 +11,11 @@
 		*Swiss ephemeris globals *
 		*************************/
 int iflag = SEFLG_SWIEPH | SEFLG_SPEED | SEFLG_EQUATORIAL;
-double Julian_Date;
+double Julian_Date, Te_Date;
+double pdat[6];
 int day, month, year;
 double minute, hour, second;
+double lgtData, latData;
 
 /**********************************************************/
 std::string tmp_string;

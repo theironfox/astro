@@ -11,10 +11,15 @@
 extern simple* Simple;
 extern std::string tmp_string;
 
+char serr[256];
+char pName[24];
 //SWEPH
+extern int iflag;
 extern int day, month, year;
 extern double minute, hour, second;
-extern double Julian_Date;
+extern double Julian_Date, Te_Date;
+extern double lgtData, latData;
+extern double pdat[6];
 //
 
 //spacing information: text and control = 25
@@ -40,7 +45,9 @@ inputPanel::inputPanel(wxPanel *parent)
 //panel contains time settings including radio buttons
 	wxPanel *TimePanel = new wxPanel(this, wxID_ANY, wxPoint(1,120), wxSize(280,60));
 	wxStaticText *timeLabel = new wxStaticText(TimePanel, wxID_ANY, wxT("Time:"), wxPoint(5,1), wxDefaultSize);
-	timeTctl = new wxTextCtrl(TimePanel, wxID_ANY, wxT(""), wxPoint(5,25), wxSize(150,20));
+	timeTctl = new wxTextCtrl(TimePanel, wxID_ANY, wxT(""), wxPoint(5,25), wxSize(40,20));
+	minTctl = new wxTextCtrl(TimePanel, wxID_ANY, wxT(""), wxPoint(45,25), wxSize(40,20));
+	secTctl = new wxTextCtrl(TimePanel, wxID_ANY, wxT(""), wxPoint(85,25), wxSize(40,20));
 	radio1 = new wxRadioButton(TimePanel, wxID_ANY, wxT("AM"), wxPoint(160,25), wxDefaultSize);
 	wxRadioButton *radio2 = new wxRadioButton(TimePanel, wxID_ANY, wxT("PM"), wxPoint(210,25), wxDefaultSize);
 
@@ -67,11 +74,11 @@ inputPanel::inputPanel(wxPanel *parent)
 	enableCheck->Bind(wxEVT_CHECKBOX, &inputPanel::OnCustom, this);
 	
 	wxPanel *cdPanel = new wxPanel(this, wxID_ANY, wxPoint(0,480), wxSize(250,100));
-	wxStaticText *lngLabel = new wxStaticText(cdPanel, wxID_ANY, wxT("Longitude:"), wxPoint(5, 1), wxDefaultSize); //470
+	wxStaticText *lngLabel = new wxStaticText(cdPanel, wxID_ANY, wxT("Longitude:"), wxPoint(5, 1), wxDefaultSize);
 	lngDeg = new wxTextCtrl(cdPanel, wxID_ANY, wxT(""), wxPoint(5,25), wxSize(40,30));
 	lngMin = new wxTextCtrl(cdPanel, wxID_ANY, wxT(""), wxPoint(50,25), wxSize(40,30));
 	lngSec = new wxTextCtrl(cdPanel, wxID_ANY, wxT(""), wxPoint(95, 25), wxSize(40,30));
-	wxRadioButton *radioLE = new wxRadioButton(cdPanel, wxID_ANY, wxT("E"), wxPoint(150, 25), wxDefaultSize);
+	radioLE = new wxRadioButton(cdPanel, wxID_ANY, wxT("E"), wxPoint(150, 25), wxDefaultSize);
 	wxRadioButton *radioLW = new wxRadioButton(cdPanel, wxID_ANY, wxT("W"), wxPoint(190, 25), wxDefaultSize);
 
 	wxPanel *latPanel = new wxPanel(this, wxID_ANY, wxPoint(0,540), wxSize(250,100));
@@ -79,7 +86,7 @@ inputPanel::inputPanel(wxPanel *parent)
 	latDeg = new wxTextCtrl(latPanel, wxID_ANY, wxT(""), wxPoint(5,25), wxSize(40,30));
 	latMin = new wxTextCtrl(latPanel, wxID_ANY, wxT(""), wxPoint(50,25), wxSize(40,30));
 	latSec = new wxTextCtrl(latPanel, wxID_ANY, wxT(""), wxPoint(95, 25), wxSize(40,30));
-	wxRadioButton *radioLN = new wxRadioButton(latPanel, wxID_ANY, wxT("N"), wxPoint(150,25), wxDefaultSize);
+	radioLN = new wxRadioButton(latPanel, wxID_ANY, wxT("N"), wxPoint(150,25), wxDefaultSize);
 	wxRadioButton *radioLS = new wxRadioButton(latPanel, wxID_ANY, wxT("S"), wxPoint(190,25), wxDefaultSize);
 //Buttons
 	wxButton *calcBttn = new wxButton(this, cBttnId, wxT("OK"), wxPoint(5, 750), wxDefaultSize);
@@ -148,67 +155,53 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 	tSstream << tempint;
 	int number;
 	tSstream >> number;
-//	std::cout << number + 1;
 
-	//create decimal from longitude
-	{
+	try{
 		double deg = std::stod(std::string(lngDeg->GetValue().mb_str()));
 		int mins = std::stoi(std::string(lngMin->GetValue().mb_str()));
 		double secs = std::stod(std::string(lngSec->GetValue().mb_str()));
-		double decDeg = deg + (mins/60) + (secs/3600);
-		std::cout << decDeg << std::endl; 
+		if(deg + mins + secs > 0)
+		{
+			lgtData = deg + (mins/60) + (secs/3600);
+			if(!radioLE->GetValue())
+			{
+				lgtData = -lgtData;
+			}
+		}
 	}
-	//create decimal from latitude
+	catch(...)
 	{
+		wxMessageBox(wxT("Check Longitude Data"), wxT("Calculation error"), wxICON_ERROR);
+	}
+	try{
 		double deg = std::stod(std::string(latDeg->GetValue().mb_str()));
 		int mins = std::stoi(std::string(latMin->GetValue().mb_str()));
 		double secs = std::stod(std::string(latSec->GetValue().mb_str()));
-		double decDeg = deg + (mins/60) + (secs/3600);
-		std::cout << decDeg << std::endl; 
+		if(deg + mins + secs > 0)
+		{
+			latData = deg + (mins/60) + (secs/3600);
+			if(!radioLN->GetValue())
+			{
+				latData = -latData;
+			}
+		}
+	}
+	catch(...)
+	{
+		wxMessageBox(wxT("Check Latitude Data"), wxT("Calculation error"), wxICON_ERROR);
 	}
 
-	switch(tTM.length()) //This works well but is clumsy, clean up when possible
+	try{
+		int tmpHour = std::stoi(std::string(timeTctl->GetValue().mb_str()));;
+		int tmpMinute = std::stoi(std::string(minTctl->GetValue().mb_str()));
+		double tmpSecond = std::stod(std::string(secTctl->GetValue().mb_str()));
+		minute = tmpMinute;
+		second = tmpSecond;
+		hour = tmpHour + (tmpMinute/60) + (tmpSecond/3600);
+	}
+	catch(...)
 	{
-		case 0:
-		//	wxMessageBox(wxT("Missing information: Time"), wxT("Time input error"), wxICON_ERROR);     /////////DEL COMMENT
-		break;
-		case 1:
-			hour = (tTM.at(0) - 48);
-		break;
-		case 2:
-			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
-		break;
-		case 4:
-			hour = (tTM.at(0) - 48);
-			minute = ((tTM.at(2) - 48) * 10) + (tTM.at(3) - 48);
-			hour = hour + (minute / 60);
-		break;
-		case 5:
-			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
-			minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
-			hour = hour + (minute / 60);
-		break;
-		case 7:
-			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
-			minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
-			second = (tTM.at(6) - 48);
-			hour = hour + (minute /60) + (second / 3600);
-		break;
-		case 8:
-			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
-			minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
-			second = ((tTM.at(6) - 48) * 10) + (tTM.at(7) - 48);
-			hour = hour + (minute /60) + (second / 3600);
-		break;
-		case 9:
-			hour = ((tTM.at(0) - 48) * 10) + (tTM.at(1) - 48);
-			minute = ((tTM.at(3) - 48) * 10) + (tTM.at(4) - 48);
-			second = ((tTM.at(6) - 48) * 100) + ((tTM.at(7) - 48) * 10) + (tTM.at(8) - 48);
-			hour = hour + (minute /60) + (second / 3600);
-		default:
-			wxMessageBox(wxT("Check time is entered correctly"), wxT("Time input error"), wxICON_ERROR);
-			std::cout << "Unrecognised time input" << std::endl;
-		break;
+		wxMessageBox(wxT("Check Time Data"), wxT("Calculation error"), wxICON_ERROR);
 	}
 	if(!radio1->GetValue())
 	{
@@ -245,9 +238,6 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 	tString = tString + "\nDate: ";
 	tString = tString + std::to_string(day) + "/" + std::to_string(month) + "/" + std::to_string(year);
 
-
-
-
 	if((int)minute == 0 && (int)second == 0)
 	{
 		tString = tString + "\nTime: " + std::to_string((int)hour) + " " + strAMPM;
@@ -255,7 +245,7 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 	else
 	{
 		tString = tString + "\nTime: " + std::to_string((int)hour) + ":" + std::to_string((int)minute);
-		tString = tString + ":" + std::to_string(second) +  strAMPM;
+		tString = tString + "." + std::to_string(second) +  strAMPM;
 	}
 	
 	if(!am)
@@ -264,9 +254,28 @@ void inputPanel::OnCalculate(wxCommandEvent& event)
 	}
 	hour = hour - tZoneD[tzoneCombo->GetSelection()];
 	Julian_Date = swe_julday(year, month, day, hour, SE_GREG_CAL);
+	Te_Date = Julian_Date - swe_deltat_ex(Julian_Date, SEFLG_SWIEPH, serr);
 		
 	tString = tString + "\nJulian Date: " + std::to_string(Julian_Date);
-
+	//tString = tString + "\nTe Date: " + std::to_string(Te_Date);
+	{
+		double deltaT = swe_deltat(Julian_Date) * 86400.0;;
+		tString = tString + "\nDelta T: " + std::to_string(deltaT);
+	}
+	
+	for(int i = SE_SUN; i < SE_PLUTO; i++)
+	{
+		std::cout << i << std::endl;
+		swe_calc(Julian_Date, i, iflag, pdat, serr);
+		swe_get_planet_name(i, pName);
+		std::cout << pName << "  ";
+		for(int ii = 0; ii < 6; ii++)
+		{
+			std::cout << pdat[i];
+		}
+		std::cout << std::endl;
+	}
+	
 	Simple->UpdateNP(tString);
 
 }

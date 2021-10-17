@@ -12,6 +12,8 @@ public:
 	std::string name;
 	wxPanel *m_parent;
 	wxRadioButton *radio1;
+	wxRadioButton *radioLN;
+	wxRadioButton *radioLE;
 
 	wxTextCtrl *nameTctl;
 	wxTextCtrl *dateATctl;
@@ -22,6 +24,8 @@ public:
 	wxTextCtrl *latDeg;
 	wxTextCtrl *latMin;
 	wxTextCtrl *latSec;
+	wxTextCtrl *minTctl;
+	wxTextCtrl *secTctl;
 
 	wxStaticText *CountryLabel;
 	wxStaticText *CityLabel;
